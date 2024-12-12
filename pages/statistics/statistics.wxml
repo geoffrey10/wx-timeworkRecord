@@ -1,0 +1,74 @@
+<view class="container">
+  <view class="tab-header">
+    <view class="tab-item {{tabActive === 'week' ? 'active' : ''}}" 
+          bindtap="switchTab" 
+          data-tab="week">周统计</view>
+    <view class="tab-item {{tabActive === 'month' ? 'active' : ''}}" 
+          bindtap="switchTab" 
+          data-tab="month">月统计</view>
+  </view>
+
+  <view class="period-title">
+    {{tabActive === 'week' ? currentWeek : currentMonth}}
+  </view>
+
+  <view class="stats-container">
+    <block wx:if="{{tabActive === 'week'}}">
+      <view class="stats-card" wx:if="{{weeklyStats}}">
+        <view class="stats-item">
+          <text class="label">出勤天数</text>
+          <text class="value">{{weeklyStats.daysWorked}}天</text>
+        </view>
+        <view class="stats-item">
+          <text class="label">日均工时</text>
+          <text class="value">{{weeklyStats.averageWorkingHours}}小时</text>
+        </view>
+        <view class="stats-item">
+          <text class="label">总工时</text>
+          <text class="value">{{weeklyStats.totalWorkingHours}}小时</text>
+        </view>
+        <view class="stats-item">
+          <text class="label">加班时长</text>
+          <text class="value">{{weeklyStats.overtimeHours}}小时</text>
+        </view>
+        <view class="stats-item">
+          <text class="label">早到次数</text>
+          <text class="value">{{weeklyStats.earlyDays}}次</text>
+        </view>
+        <view class="stats-item">
+          <text class="label">晚退次数</text>
+          <text class="value">{{weeklyStats.lateDays}}次</text>
+        </view>
+      </view>
+    </block>
+
+    <block wx:else>
+      <view class="stats-card" wx:if="{{monthlyStats}}">
+        <view class="stats-item">
+          <text class="label">出勤天数</text>
+          <text class="value">{{monthlyStats.daysWorked}}天</text>
+        </view>
+        <view class="stats-item">
+          <text class="label">日均工时</text>
+          <text class="value">{{monthlyStats.averageWorkingHours}}小时</text>
+        </view>
+        <view class="stats-item">
+          <text class="label">总工时</text>
+          <text class="value">{{monthlyStats.totalWorkingHours}}小时</text>
+        </view>
+        <view class="stats-item">
+          <text class="label">加班时长</text>
+          <text class="value">{{monthlyStats.overtimeHours}}小时</text>
+        </view>
+        <view class="stats-item">
+          <text class="label">早到次数</text>
+          <text class="value">{{monthlyStats.earlyDays}}次</text>
+        </view>
+        <view class="stats-item">
+          <text class="label">晚退次数</text>
+          <text class="value">{{monthlyStats.lateDays}}次</text>
+        </view>
+      </view>
+    </block>
+  </view>
+</view>

@@ -1,0 +1,117 @@
+.container {
+  padding: 30rpx;
+  background: #f7f7f7;
+  min-height: 100vh;
+}
+
+.user-card {
+  background: #fff;
+  padding: 40rpx;
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+  margin-bottom: 30rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.1);
+}
+
+.avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 60rpx;
+  margin-right: 30rpx;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.nickname {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  display: block;
+  margin-bottom: 10rpx;
+}
+
+.department {
+  font-size: 28rpx;
+  color: #666;
+}
+
+.logout-btn {
+  font-size: 28rpx;
+  color: #ff4d4f;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.login-btn {
+  width: 100%;
+  background: #07c160;
+  color: #fff;
+}
+
+.stats-card {
+  background: #fff;
+  padding: 30rpx;
+  border-radius: 20rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.1);
+}
+
+.stats-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #eee;
+}
+
+.stats-item:last-child {
+  border-bottom: none;
+}
+
+.label {
+  color: #666;
+  font-size: 28rpx;
+}
+
+.value {
+  color: #333;
+  font-size: 28rpx;
+  font-weight: bold;
+}
+
+.function-list {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 0 30rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.1);
+}
+
+.function-item {
+  display: flex;
+  align-items: center;
+  padding: 30rpx 0;
+  border-bottom: 1rpx solid #eee;
+}
+
+.function-item:last-child {
+  border-bottom: none;
+}
+
+.icon {
+  margin-right: 20rpx;
+  font-size: 36rpx;
+}
+
+.title {
+  flex: 1;
+  font-size: 28rpx;
+  color: #333;
+}
+
+.arrow {
+  color: #999;
+  font-size: 28rpx;
+}

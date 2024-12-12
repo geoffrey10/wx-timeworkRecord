@@ -1,0 +1,24 @@
+<view class="container">
+  <view class="clock-card">
+    <view class="user-info">
+      <open-data type="userAvatarUrl" class="avatar"></open-data>
+      <open-data type="userNickName" class="nickname"></open-data>
+    </view>
+    
+    <view class="time-display">
+      <text class="current-time">{{currentTime}}</text>
+      <text class="current-date">{{currentDate}}</text>
+    </view>
+    
+    <view class="button-group">
+      <button class="clock-btn" bindtap="handleClockIn" type="primary">上班打卡</button>
+      <button class="clock-btn" bindtap="handleClockOut" type="primary">下班打卡</button>
+    </view>
+    
+    <view class="record-info" wx:if="{{todayRecord}}">
+      <text>今日打卡记录：</text>
+      <text wx:if="{{todayRecord.clockInTime}}">上班时间：{{todayRecord.clockInTime}}</text>
+      <text wx:if="{{todayRecord.clockOutTime}}">下班时间：{{todayRecord.clockOutTime}}</text>
+    </view>
+  </view>
+</view> 

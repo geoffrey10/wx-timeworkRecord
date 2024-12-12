@@ -1,0 +1,62 @@
+.container {
+  padding: 30rpx;
+}
+
+.time-card {
+  background: #fff;
+  padding: 40rpx;
+  border-radius: 20rpx;
+  text-align: center;
+  margin-bottom: 40rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.1);
+}
+
+.current-date {
+  font-size: 32rpx;
+  color: #666;
+  margin-bottom: 20rpx;
+}
+
+.current-time {
+  font-size: 60rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.clock-status {
+  background: #fff;
+  padding: 30rpx;
+  border-radius: 20rpx;
+  margin-bottom: 40rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.1);
+}
+
+.status-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #eee;
+}
+
+.status-item:last-child {
+  border-bottom: none;
+}
+
+.label {
+  color: #666;
+  font-size: 28rpx;
+}
+
+.time {
+  color: #333;
+  font-size: 28rpx;
+  font-weight: bold;
+}
+
+.btn-group {
+  margin-top: 40rpx;
+}
+
+.clock-btn {
+  margin-bottom: 30rpx;
+} 
