@@ -115,3 +115,12 @@
   color: #999;
   font-size: 28rpx;
 }
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30rpx;
+  background: #fff;
+  border-bottom: 1rpx solid #eee;
+}

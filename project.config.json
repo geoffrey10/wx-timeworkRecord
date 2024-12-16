@@ -39,10 +39,12 @@
   "compileType": "miniprogram",
   "libVersion": "2.19.4",
   "appid": "wxb9872820e0ea3405",
-  "projectname": "你的项目名称",
+  "projectname": "timeTracker",
   "condition": {},
   "editorSetting": {
     "tabIndent": "insertSpaces",
     "tabSize": 2
-  }
+  },
+  "cloudfunctionRoot": "cloudfunctions/",
+  "cloud": true
 }

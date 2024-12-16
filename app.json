@@ -31,5 +31,13 @@
         "selectedIconPath": "images/profile-active.png"
       }
     ]
-  }
+  },
+  "permission": {
+    "scope.userLocation": {
+      "desc": "您的位置信息将用于打卡定位"
+    }
+  },
+  "requiredPrivateInfos": [
+    "getLocation"
+  ]
 } 

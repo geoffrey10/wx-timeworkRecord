@@ -47,4 +47,9 @@
       <text class="arrow">></text>
     </view>
   </view>
+
+  <view class="setting-item">
+    <text>打卡提醒</text>
+    <switch checked="{{hasReminder}}" bindchange="handleReminderChange"></switch>
+  </view>
 </view>

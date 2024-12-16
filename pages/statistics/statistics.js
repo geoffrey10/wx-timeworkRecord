@@ -7,11 +7,8 @@ Page({
       tabActive: 'week'  // 'week' 或 'month'
     },
   
-    onLoad() {
-      this.setCurrentPeriod();
-    },
-  
     onShow() {
+      this.setCurrentPeriod();
       this.fetchStatistics();
     },
   
@@ -35,44 +32,72 @@ Page({
       return Math.ceil((pastDays + firstDayOfYear.getDay() + 1) / 7);
     },
   
-    // 切换统计周期
-    switchTab(e) {
-      const tab = e.currentTarget.dataset.tab;
-      this.setData({ tabActive: tab });
-      this.fetchStatistics();
+    // 获取本周日期范围
+    getWeekRange() {
+      const now = new Date();
+      const currentDay = now.getDay(); // 0是周日，1是周一
+      const monday = new Date(now); // 本周一
+      monday.setDate(now.getDate() - (currentDay || 7) + 1);
+      monday.setHours(0, 0, 0, 0);
+  
+      const sunday = new Date(monday); // 本周日
+      sunday.setDate(monday.getDate() + 6);
+      sunday.setHours(23, 59, 59, 999);
+  
+      return {
+        weekStart: monday,
+        weekEnd: sunday
+      };
+    },
+  
+    // 获取本月日期范围
+    getMonthRange() {
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      monthStart.setHours(0, 0, 0, 0);
+  
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      monthEnd.setHours(23, 59, 59, 999);
+  
+      return {
+        monthStart,
+        monthEnd
+      };
     },
   
     // 获取统计数据
     async fetchStatistics() {
       try {
+        const userInfo = wx.getStorageSync('userInfo');
+        if (!userInfo || !userInfo._openid) {
+          return;
+        }
+  
         if (this.data.tabActive === 'week') {
-          await this.fetchWeeklyStats();
+          await this.fetchWeeklyStats(userInfo._openid);
         } else {
-          await this.fetchMonthlyStats();
+          await this.fetchMonthlyStats(userInfo._openid);
         }
       } catch (error) {
         console.error('获取统计数据失败：', error);
         wx.showToast({
           title: '获取数据失败',
-          icon: 'error'
+          icon: 'none'
         });
       }
     },
   
     // 获取周统计
-    async fetchWeeklyStats() {
+    async fetchWeeklyStats(openid) {
       const db = wx.cloud.database();
       const _ = db.command;
-      
-      // 获取本周的起止时间
       const { weekStart, weekEnd } = this.getWeekRange();
   
       const records = await db.collection('attendance_records')
         .where({
-          _openid: getApp().globalData.userInfo._openid,
-          date: _.gte(weekStart).and(_.lte(weekEnd))
+          _openid: openid,
+          clockInTime: _.gte(weekStart.getTime()).and(_.lte(weekEnd.getTime()))
         })
-        .orderBy('date', 'asc')
         .get();
   
       const stats = this.calculateStats(records.data);
@@ -80,19 +105,16 @@ Page({
     },
   
     // 获取月统计
-    async fetchMonthlyStats() {
+    async fetchMonthlyStats(openid) {
       const db = wx.cloud.database();
       const _ = db.command;
-      
-      // 获取本月的起止时间
       const { monthStart, monthEnd } = this.getMonthRange();
   
       const records = await db.collection('attendance_records')
         .where({
-          _openid: getApp().globalData.userInfo._openid,
-          date: _.gte(monthStart).and(_.lte(monthEnd))
+          _openid: openid,
+          clockInTime: _.gte(monthStart.getTime()).and(_.lte(monthEnd.getTime()))
         })
-        .orderBy('date', 'asc')
         .get();
   
       const stats = this.calculateStats(records.data);
@@ -122,7 +144,7 @@ Page({
   
           // 晚退（晚于18点）
           const clockOutHour = new Date(record.clockOutTime).getHours();
-          if (clockOutHour >= 18) {
+          if (clockOutHour >= 22) {
             lateDays++;
           }
         }
@@ -139,21 +161,5 @@ Page({
         earlyDays,
         lateDays
       };
-    },
-  
-    // 获取本周日期范围
-    getWeekRange() {
-      const now = new Date();
-      const weekStart = new Date(now.setDate(now.getDate() - now.getDay())).toLocaleDateString('zh-CN');
-      const weekEnd = new Date(now.setDate(now.getDate() + 6)).toLocaleDateString('zh-CN');
-      return { weekStart, weekEnd };
-    },
-  
-    // 获取本月日期范围
-    getMonthRange() {
-      const now = new Date();
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString('zh-CN');
-      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toLocaleDateString('zh-CN');
-      return { monthStart, monthEnd };
     }
   });

@@ -1,47 +1,45 @@
 const { isValidLocation, COMPANY_LOCATION } = require('../../utils/location.js');
-const { setClockReminder } = require('../../utils/reminder.js');
+const { clockReminder } = require('../../utils/reminder.js');
 Page({
   data: {
     currentTime: '',
     currentDate: '',
-    todayRecord: null,
-    userId: '', // 用户ID将从登录后获取
-    userName: '' // 用户名将从登录后获取
+    userInfo: null,
+    isLogin: false,
+    todayRecord: null  // 添加今日打卡记录
   },
 
   onLoad() {
-    // 获取用户信息
-    const userInfo = wx.getStorageSync('userInfo');
-    console.log('当前用户信息：', userInfo);  // 添加日志
-    if (userInfo) {
-      this.setData({
-        userId: userInfo._openid,
-        userName: userInfo.nickName
-      });
-    } else {
-      console.log('未获取到用户信息');  // 添加日志
-      // 跳转到登录页面或显示登录提示
-      wx.showToast({
-        title: '请先登录',
-        icon: 'none'
-      });
-    }
-    
+    this.checkLoginStatus();
     this.updateTime();
-    this.getTodayRecord();
-
-    
-    this.updateTime();
-    // 每秒更新时间显示
     setInterval(() => {
       this.updateTime();
     }, 1000);
+  },
+
+  onShow() {
+    this.checkLoginStatus();
+    if (this.data.isLogin) {
+      this.getTodayRecord();  // 获取今日打卡记录
+    }
+  },
+
+  // 检查登录状态
+  checkLoginStatus() {
+    const userInfo = wx.getStorageSync('userInfo');
+    console.log('当前用户信息：', userInfo);
     
-    // 获取今日打卡记录
-    this.getTodayRecord();
-    
-    // 设置打卡提醒
-    setClockReminder();
+    if (userInfo && userInfo._openid) {
+      this.setData({
+        userInfo: userInfo,
+        isLogin: true
+      });
+    } else {
+      this.setData({
+        userInfo: null,
+        isLogin: false
+      });
+    }
   },
 
   updateTime() {
@@ -52,35 +50,80 @@ Page({
     });
   },
 
+  // 获取今日打卡记录
   async getTodayRecord() {
     try {
       const db = wx.cloud.database();
-      const today = new Date().toISOString().split('T')[0];
-      const record = await db.collection('attendance_records')
+      const _ = db.command;
+      const today = new Date().toLocaleDateString('zh-CN');
+      
+      const res = await db.collection('attendance_records')
         .where({
-          userId: this.data.userId,
+          _openid: this.data.userInfo._openid,
           date: today
         })
         .get();
-      
-      if (record.data.length > 0) {
-        this.setData({ todayRecord: record.data[0] });
+
+      if (res.data.length > 0) {
+        const record = res.data[0];
+        let earliestClockIn = record.clockInTime;
+        let latestClockOut = record.clockOutTime;
+
+        // 如果有多条记录，找出最早的上班时间和最晚的下班时间
+        if (res.data.length > 1) {
+          res.data.forEach(item => {
+            if (item.clockInTime && (!earliestClockIn || item.clockInTime < earliestClockIn)) {
+              earliestClockIn = item.clockInTime;
+            }
+            if (item.clockOutTime && (!latestClockOut || item.clockOutTime > latestClockOut)) {
+              latestClockOut = item.clockOutTime;
+            }
+          });
+        }
+
+        // 格式化时间
+        const clockInTime = earliestClockIn ? new Date(earliestClockIn).toLocaleTimeString('zh-CN') : '';
+        const clockOutTime = latestClockOut ? new Date(latestClockOut).toLocaleTimeString('zh-CN') : '';
+        
+        this.setData({
+          todayRecord: {
+            ...record,
+            clockInTimeFormat: clockInTime,
+            clockOutTimeFormat: clockOutTime,
+            clockInTime: earliestClockIn,
+            clockOutTime: latestClockOut
+          }
+        });
+
+        console.log('今日打卡记录：', {
+          上班时间: clockInTime,
+          下班时间: clockOutTime
+        });
       } else {
-        this.setData({ todayRecord: null });
+        this.setData({
+          todayRecord: null
+        });
       }
     } catch (error) {
-      console.error('获取打卡记录失败:', error);
+      console.error('获取今日打卡记录失败：', error);
     }
   },
 
+  // 上班打卡
   async handleClockIn() {
     try {
-      // 先检查是否已登录
-      if (!this.data.userId) {
-        console.log('用户未登录');  // 添加日志
+      // 严格检查登录状态
+      if (!this.data.isLogin || !this.data.userInfo || !this.data.userInfo._openid) {
+        console.log('未登录状态，不能打卡');
         wx.showToast({
           title: '请先登录',
-          icon: 'none'
+          icon: 'none',
+          duration: 2000
+        });
+        
+        // 可以选择跳转到登录页面
+        wx.switchTab({
+          url: '/pages/profile/profile'
         });
         return;
       }
@@ -91,50 +134,25 @@ Page({
         isHighAccuracy: true,
         highAccuracyExpireTime: 3000
       });
-      
-      console.log('获取到的位置信息:', {
-        latitude: location.latitude,
-        longitude: location.longitude,
-        accuracy: location.accuracy,
-        time: new Date().toLocaleString()
-      });
 
       // 验证位置
       if (!isValidLocation(location)) {
-        console.error('上班打卡失败: 位置验证失败', {
-          currentLocation: {
-            latitude: location.latitude,
-            longitude: location.longitude
-          },
-          companyLocation: COMPANY_LOCATION,
-          time: new Date().toLocaleString(),
-          userId: this.data.userId
-        });
-
-        // 计算实际距离并显示
-        const distance = getDistance(
-          location.latitude,
-          location.longitude,
-          COMPANY_LOCATION.latitude,
-          COMPANY_LOCATION.longitude
-        );
-
         wx.showToast({
-          title: `距离公司${Math.round(distance)}米，请在公司范围内打卡`,
+          title: '请在公司范围内打卡',
           icon: 'none',
-          duration: 3000
+          duration: 2000
         });
         return;
       }
 
       const db = wx.cloud.database();
-      const today = new Date().toISOString().split('T')[0];
-      const currentTime = new Date();
+      const timestamp = Date.now();
+      const today = new Date().toLocaleDateString('zh-CN');
 
-      // 查找今日记录
+      // 查询今日记录
       const todayRecord = await db.collection('attendance_records')
         .where({
-          userId: this.data.userId,
+          _openid: this.data.userInfo._openid,  // 使用当前登录用户的openid
           date: today
         })
         .get();
@@ -143,44 +161,36 @@ Page({
         // 创建新记录
         await db.collection('attendance_records').add({
           data: {
-            userId: this.data.userId,
-            userName: this.data.userName,
             date: today,
-            clockInTime: currentTime,
+            clockInTime: timestamp,
             clockInLocation: location,
+            userName: this.data.userInfo.nickName,  // 添加用户名
             createTime: db.serverDate()
           }
         });
       } else {
-        // 更新最早的上班时间
-        const record = todayRecord.data[0];
-        if (!record.clockInTime || currentTime < record.clockInTime) {
-          await db.collection('attendance_records')
-            .doc(record._id)
-            .update({
-              data: {
-                clockInTime: currentTime,
-                clockInLocation: location
-              }
-            });
-        }
+        // 如果新的打卡时间更早，则更新
+        const earliestClockIn = Math.min(timestamp, todayRecord.data[0].clockInTime || Infinity);
+        await db.collection('attendance_records')
+          .doc(todayRecord.data[0]._id)
+          .update({
+            data: {
+              clockInTime: earliestClockIn,
+              clockInLocation: location
+            }
+          });
       }
 
-      await this.getTodayRecord(); // 刷新显示
       wx.showToast({
-        title: '上班打卡成功',
+        title: '打卡成功',
         icon: 'success'
       });
+
+      // 立即刷新显示的打卡记录
+      this.getTodayRecord();
+
     } catch (error) {
-      console.error('上班打卡失败:', error);
-      console.error('错误详情:', {
-        userId: this.data.userId,
-        userName: this.data.userName,
-        time: new Date().toLocaleString(),
-        errorMessage: error.message,
-        errorStack: error.stack,
-        location: error.location || '未获取到位置信息'
-      });
+      console.error('上班打卡失败：', error);
       wx.showToast({
         title: '打卡失败',
         icon: 'none'
@@ -190,63 +200,85 @@ Page({
 
   async handleClockOut() {
     try {
-      // 获取位置信息
+      // 检查登录状态
+      if (!this.data.isLogin || !this.data.userInfo || !this.data.userInfo._openid) {
+        wx.showModal({
+          title: '提示',
+          content: '请先登录后再打卡',
+          showCancel: false,
+          success: (res) => {
+            if (res.confirm) {
+              this.goToLogin();
+            }
+          }
+        });
+        return;
+      }
+  
+      const db = wx.cloud.database();
+      const today = new Date().toLocaleDateString('zh-CN');
+      const timestamp = Date.now();
+  
+      // 先查询今日是否有上班打卡记录
+      const todayRecord = await db.collection('attendance_records')
+        .where({
+          _openid: this.data.userInfo._openid,
+          date: today,
+          clockInTime: db.command.exists(true)  // 确保有上班打卡时间
+        })
+        .get();
+  
+      // 如果没有上班打卡记录
+      if (todayRecord.data.length === 0) {
+        wx.showModal({
+          title: '提示',
+          content: '请先进行上班打卡',
+          showCancel: false
+        });
+        return;
+      }
+  
+      // 获取位置
       const location = await wx.getLocation({
-        type: 'gcj02'
+        type: 'gcj02',
+        isHighAccuracy: true,
+        highAccuracyExpireTime: 3000
       });
-      
+  
       // 验证位置
       if (!isValidLocation(location)) {
-        console.error('下班打卡失败: 位置验证失败', {
-          location,
-          time: new Date().toLocaleString(),
-          userId: this.data.userId
-        });
         wx.showToast({
           title: '请在公司范围内打卡',
-          icon: 'none'
+          icon: 'none',
+          duration: 2000
         });
         return;
       }
+        // 如果新的打卡时间更晚，则更新
+        const latestClockOut = Math.max(timestamp, todayRecord.data[0].clockOutTime || 0);
 
-      const today = new Date().toISOString().split('T')[0];
-      let record = await findTodayRecord(this.data.userId, today);
-      
-      if (!record) {
-        console.error('下班打卡失败: 未找到上班打卡记录', {
-          userId: this.data.userId,
-          date: today,
-          time: new Date().toLocaleString()
+      // 更新下班打卡记录
+      await db.collection('attendance_records')
+        .doc(todayRecord.data[0]._id)
+        .update({
+          data: {
+            clockOutTime: latestClockOut,
+            clockOutLocation: location
+          }
         });
-        wx.showToast({
-          title: '请先进行上班打卡',
-          icon: 'none'
-        });
-        return;
-      }
-
-      const currentTime = new Date();
-      if (!record.clockOutTime || currentTime > record.clockOutTime) {
-        record.clockOutTime = currentTime;
-        await updateRecord(record);
-        await this.getTodayRecord(); // 刷新显示
-        
-        wx.showToast({
-          title: '下班打卡成功',
-          icon: 'success'
-        });
-      }
-    } catch (error) {
-      console.error('下班打卡失败:', error);
-      console.error('错误详情:', {
-        userId: this.data.userId,
-        time: new Date().toLocaleString(),
-        errorMessage: error.message,
-        errorStack: error.stack,
-        location: error.location || '未获取到位置信息'
-      });
+  
       wx.showToast({
-        title: '打卡失败',
+        title: '下班打卡成功',
+        icon: 'success'
+      });
+  
+      // 立即刷新显示的打卡记录
+      this.getTodayRecord();
+  
+    } catch (error) {
+      console.error('下班打卡失败：', error);
+      wx.showToast({
+        title: error.message || '下班打卡失败',
         icon: 'none'
       });
     }
